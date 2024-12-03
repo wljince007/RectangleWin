@@ -47,16 +47,16 @@ func main() {
 	printMonitors()
 
 	edgeFuncs := [][]resizeFunc{
-		{leftHalf, leftTwoThirds, leftOneThirds},
-		{rightHalf, rightTwoThirds, rightOneThirds},
-		{topHalf, topTwoThirds, topOneThirds},
-		{bottomHalf, bottomTwoThirds, bottomOneThirds}}
+		{leftTwoThirds, leftHalf, leftOneThirds},
+		{rightTwoThirds, rightHalf, rightOneThirds},
+		{topTwoThirds, topHalf, topOneThirds},
+		{bottomTwoThirds, bottomHalf, bottomOneThirds}}
 	edgeFuncTurn := make([]int, len(edgeFuncs))
 	cornerFuncs := [][]resizeFunc{
-		{topLeftHalf, topLeftTwoThirds, topLeftOneThirds},
-		{topRightHalf, topRightTwoThirds, topRightOneThirds},
-		{bottomLeftHalf, bottomLeftTwoThirds, bottomLeftOneThirds},
-		{bottomRightHalf, bottomRightTwoThirds, bottomRightOneThirds}}
+		{topLeftOneThirds, topLeftHalf, topLeftTwoThirds},
+		{topRightOneThirds, topRightHalf, topRightTwoThirds},
+		{bottomLeftOneThirds, bottomLeftHalf, bottomLeftTwoThirds},
+		{bottomRightOneThirds, bottomRightHalf, bottomRightTwoThirds}}
 	cornerFuncTurn := make([]int, len(cornerFuncs))
 
 	cycleFuncs := func(funcs [][]resizeFunc, turns *[]int, i int) {
