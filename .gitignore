@@ -10,3 +10,6 @@ dist/
 dist/
 
 RectangleLinux
+test_cpp/xHotKeyMgr
+test/test
+server_log

@@ -29,7 +29,7 @@ func main() {
 
 	defer func() {
 		if errErr := recover(); errErr != nil {
-			seelog.Warnf("defer err:%v, \nsatck:%v", errErr, string(debug.Stack()))
+			seelog.Warnf("defer err:%v, satck:%v", errErr, string(debug.Stack()))
 		}
 	}()
 
@@ -44,7 +44,7 @@ func main() {
 		seelog.Criticalf("AutoRunEnabled err:%v", err)
 		panic(err)
 	}
-	seelog.Debugf("autorun enabled=%v\n", autorun)
+	seelog.Debugf("autorun enabled=%v", autorun)
 	printMonitors()
 
 	edgeFuncs := [][]resizeFunc{
@@ -174,7 +174,7 @@ func main() {
 			return HotKey{Id: 50, Mod: m, Key: k, Handler: func() {
 				lastResized = 0
 				if err := maximize(); err != nil {
-					seelog.Errorf("warn: maximize: %v\n", err)
+					seelog.Errorf("warn: maximize: %v", err)
 					return
 				}
 			}}
@@ -194,10 +194,10 @@ func main() {
 			return HotKey{Id: 70, Mod: m, Key: k, Handler: func() {
 				hwnd := w32.GetForegroundWindow()
 				if err := toggleAlwaysOnTop(hwnd); err != nil {
-					seelog.Errorf("warn: toggleAlwaysOnTop: %v\n", err)
+					seelog.Errorf("warn: toggleAlwaysOnTop: %v", err)
 					return
 				}
-				seelog.Debugf("> toggled always on top: %v\n", hwnd)
+				seelog.Debugf("> toggled always on top: %v", hwnd)
 			}}
 		}(),
 	}
@@ -213,7 +213,7 @@ func main() {
 	if len(failedHotKeys) > 0 {
 		seelog.Warnf("以下热键注册失败（可能已被其他进程占用）：")
 		for _, hk := range failedHotKeys {
-			seelog.Debugf("  - %s\n", hk.Key)
+			seelog.Debugf("  - %s", hk.Key)
 		}
 	}
 
@@ -222,6 +222,7 @@ func main() {
 	go func() {
 		<-exitCh
 		seelog.Warnf("exit signal received")
+		os.Exit(0)
 		// systray.Quit() // causes WM_CLOSE, WM_QUIT, not sure if a side-effect
 	}()
 
@@ -254,7 +255,7 @@ func center(disp, cur w32.RECT) w32.RECT {
 
 func resize(hwnd w32.HWND, f resizeFunc) (bool, error) {
 	if !isZonableWindow(hwnd) {
-		seelog.Errorf("warn: non-zonable window: %s\n", w32.GetWindowText(hwnd))
+		seelog.Errorf("warn: non-zonable window: %s", w32.GetWindowText(hwnd))
 		return false, nil
 	}
 	rect := w32.GetWindowRect(hwnd)
@@ -276,9 +277,9 @@ func resize(hwnd w32.HWND, f resizeFunc) (bool, error) {
 	windowDPI := w32ex.GetDpiForWindow(hwnd)
 	resizedFrame := resizeForDpi(frame, int32(windowDPI), int32(displayDPI))
 
-	seelog.Debugf("> window: 0x%x %#v (w:%d,h:%d) mon=0x%X(@ display DPI:%d)\n", hwnd, rect, rect.Width(), rect.Height(), mon, displayDPI)
-	seelog.Debugf("> DWM frame:        %#v (W:%d,H:%d) @ window DPI=%v\n", frame, frame.Width(), frame.Height(), windowDPI)
-	seelog.Debugf("> DPI-less frame:   %#v (W:%d,H:%d)\n", resizedFrame, resizedFrame.Width(), resizedFrame.Height())
+	seelog.Debugf("> window: 0x%x %#v (w:%d,h:%d) mon=0x%X(@ display DPI:%d)", hwnd, rect, rect.Width(), rect.Height(), mon, displayDPI)
+	seelog.Debugf("> DWM frame:        %#v (W:%d,H:%d) @ window DPI=%v", frame, frame.Width(), frame.Height(), windowDPI)
+	seelog.Debugf("> DPI-less frame:   %#v (W:%d,H:%d)", resizedFrame, resizedFrame.Width(), resizedFrame.Height())
 
 	// calculate how many extra pixels go to win10 invisible borders
 	lExtra := resizedFrame.Left - rect.Left
@@ -300,7 +301,7 @@ func resize(hwnd w32.HWND, f resizeFunc) (bool, error) {
 		return false, nil
 	}
 
-	seelog.Debugf("> resizing to: %#v (W:%d,H:%d)\n", newPos, newPos.Width(), newPos.Height())
+	seelog.Debugf("> resizing to: %#v (W:%d,H:%d)", newPos, newPos.Width(), newPos.Height())
 	if !w32.ShowWindow(hwnd, w32.SW_SHOWNORMAL) { // normalize window first if it's set to SW_SHOWMAXIMIZE (and therefore stays maximized)
 		return false, fmt.Errorf("failed to normalize window ShowWindow:%d", w32.GetLastError())
 	}
@@ -308,7 +309,7 @@ func resize(hwnd w32.HWND, f resizeFunc) (bool, error) {
 		return false, fmt.Errorf("failed to SetWindowPos:%d", w32.GetLastError())
 	}
 	rect = w32.GetWindowRect(hwnd)
-	seelog.Debugf("> post-resize: %#v(W:%d,H:%d)\n", rect, rect.Width(), rect.Height())
+	seelog.Debugf("> post-resize: %#v(W:%d,H:%d)", rect, rect.Width(), rect.Height())
 	return true, nil
 }
 

@@ -92,6 +92,7 @@ func msgLoop() error {
 	if xu == nil {
 		return fmt.Errorf("X connection unavailable")
 	}
+	keybind.Initialize(X) // 初始化键位绑定模块keybind.Initialize(X) // 初始化键位绑定模块
 	// 注册 KeyPress 事件监听器
 	xevent.KeyPressFun(func(xu *xgbutil.XUtil, ev xevent.KeyPressEvent) {
 		hotkeyMu.Lock()

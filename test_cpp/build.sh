@@ -1,0 +1,1 @@
+gcc -Wall *.c -o xHotKeyMgr  -I. -lX11

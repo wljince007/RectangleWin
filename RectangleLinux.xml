@@ -1,0 +1,22 @@
+<seelog>
+    <outputs formatid="main">
+		<console />
+        <filter levels="critical,info,error,warn">
+            <buffered size="10000" flushperiod="1000">
+			    <rollingfile type="date" filename="server_log/RectangleLinux.log" datepattern="2006.01.02" maxrolls="30"/>
+    		</buffered>
+        </filter>
+        <!--- 日志输入修改：发现打开向屏幕，函数的执行时间会慢5-10倍
+        <console />
+        <filter levels="critical,error,warn,info,debug">
+        </filter>
+            <filter levels="debug,info,critical,error">
+                <file path="log/debug.txt"/>
+            </filter>
+        -->        
+    </outputs>
+
+    <formats>
+        <format id="main" format="%Date/%Time [%LEV] %Func:%Line %Msg%n"/>
+    </formats>
+</seelog>
