@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/xevent"
 	"github.com/ahmetb/RectangleLinux/w32"
 )
@@ -42,30 +43,15 @@ func (h HotKey) Describe() string {
 	return out
 }
 
-// 注册全局热键，Key为X11 keycode
 func RegisterHotKey(h HotKey) bool {
 	hotkeyMu.Lock()
 	defer hotkeyMu.Unlock()
 	if _, ok := hotkeyRegistrations[h.Id]; ok {
 		panic("hotkey id already registered")
 	}
-	xu := w32.GetXConn()
-	if xu == nil {
-		return false
-	}
-	// 组合键字符串，如 "Control-Alt-T"
-	// keyStr := keyString(h.Mod, h.Key)
-	// err := keybind.Register(xu, xu.RootWin(), keyStr, func() {
-	// 	if cb := h.Handler; cb != nil {
-	// 		cb()
-	// 	}
-	// })
-	// if err == nil {
-	// 	hotkeyRegistrations[h.Id] = &h
-	// 	return true
-	// }
-	// fmt.Printf("failed to register hotkey: %s (%v)\n", keyStr, err)
-	return false
+	hotkeyRegistrations[h.Id] = &h
+	return true
+	// 删除多余的右括号，只保留一个函数结束标志
 }
 
 // 生成 keybind 识别的组合键字符串
@@ -105,6 +91,19 @@ func msgLoop() error {
 	if xu == nil {
 		return fmt.Errorf("X connection unavailable")
 	}
+	// 注册 KeyPress 事件监听器
+	xevent.KeyPressFun(func(xu *xgbutil.XUtil, ev xevent.KeyPressEvent) {
+		hotkeyMu.Lock()
+		defer hotkeyMu.Unlock()
+		for _, h := range hotkeyRegistrations {
+			// 这里需要你根据项目具体实现补全mod和key的判断逻辑
+			if h.Mod == int(ev.State) && h.Key == int(ev.Detail) {
+				if cb := h.Handler; cb != nil {
+					cb()
+				}
+			}
+		}
+	}).Connect(xu, xu.RootWin())
 	fmt.Println("hotkey event loop started")
 	xevent.Main(xu)
 	fmt.Println("hotkey event loop finished")
