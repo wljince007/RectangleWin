@@ -84,6 +84,7 @@ func main() {
 	cycleEdgeFuncs := func(i int) { cycleFuncs(edgeFuncs, &edgeFuncTurn, i) }
 	cycleCornerFuncs := func(i int) { cycleFuncs(cornerFuncs, &cornerFuncTurn, i) }
 
+	// 按键名称参考 ：sgithub.com/BurntSushi/xgbutil/keybind/keysymdef.go
 	// Linux 下的热键定义，Key 字符串格式如 "Control-Alt-Left"
 	// 辅助函数：将字符串热键描述解析为 (mod, keycode)
 	parseHotkeyString := func(s string) (mod int, key int) {
