@@ -1,67 +1,81 @@
-//go:build windows
-
-// // Copyright 2022 Ahmet Alp Balkan
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+//go:build linux
 
 package main
 
 import (
 	"fmt"
-	"syscall"
 
-	"github.com/gonutz/w32/v2"
-	"golang.org/x/sys/windows"
+	"github.com/BurntSushi/xgb"
+	"github.com/BurntSushi/xgb/randr"
+	"github.com/BurntSushi/xgb/xproto"
+	"github.com/ahmetb/RectangleLinux/w32"
 )
 
+// EnumMonitors 遍历所有物理显示器，回调每个显示器的 w32.HMONITOR（用output id代替）
 func EnumMonitors(f func(d w32.HMONITOR) bool) bool {
-	callback := syscall.NewCallback(func(h, _, _, _ uintptr) uintptr {
-		if f(w32.HMONITOR(h)) {
-			return 1
+	X, err := xgb.NewConn()
+	if err != nil {
+		fmt.Println("无法连接X server:", err)
+		return false
+	}
+	defer X.Close()
+
+	err = randr.Init(X)
+	if err != nil {
+		fmt.Println("无法初始化RandR:", err)
+		return false
+	}
+	root := getRootWindow(X)
+	res, err := randr.GetScreenResources(X, root).Reply()
+	if err != nil {
+		fmt.Println("无法获取显示器资源:", err)
+		return false
+	}
+	for _, output := range res.Outputs {
+		info, err := randr.GetOutputInfo(X, output, 0).Reply()
+		if err != nil || info.Connection != randr.ConnectionConnected {
+			continue
 		}
-		return 0
-	})
-	return w32.EnumDisplayMonitors(0, nil, callback, 0)
+		if !f(w32.HMONITOR(uintptr(output))) {
+			break
+		}
+	}
+	return true
 }
 
+// printMonitors 打印所有显示器信息
 func printMonitors() {
-	i := 0
 	EnumMonitors(func(d w32.HMONITOR) bool {
-		var v w32.MONITORINFO
-		if !w32.GetMonitorInfo(d, &v) {
+		X, err := xgb.NewConn()
+		if err != nil {
+			fmt.Println("无法连接X server:", err)
 			return false
 		}
-		fmt.Printf("> monitor#%d: 0x%x\n", i, d)
-		i++
-		fmt.Printf("       rcwork:%#v (w=%v,h=%v)\n", v.RcWork, v.RcWork.Width(), v.RcWork.Height())
-		fmt.Printf("    rcmonitor:%#v (w=%v,h=%v)\n", v.RcMonitor, v.RcMonitor.Width(), v.RcWork.Height())
-		fmt.Printf("      primary:%#v\n", v.DwFlags&w32.MONITORINFOF_PRIMARY > 0)
-
-		ok, n := w32.GetNumberOfPhysicalMonitorsFromHMONITOR(d)
-		if !ok {
-			fmt.Printf("  physical monitors: failed to query count: %d\n", w32.GetLastError())
-		} else {
-			fmt.Printf("  physical monitors: %d\n", n)
-			pMon := make([]w32.PHYSICAL_MONITOR, n)
-			if !w32.GetPhysicalMonitorsFromHMONITOR(d, pMon) {
-				fmt.Printf("  physical monitors: failed to get physical monitors: %d\n", w32.GetLastError())
-			} else {
-				for i, p := range pMon {
-					name := windows.UTF16ToString(p.Description[:])
-					fmt.Printf("  > physical monitor#%d: %s\n", i, name)
-				}
-			}
+		defer X.Close()
+		output := randr.Output(uintptr(d))
+		info, err := randr.GetOutputInfo(X, output, 0).Reply()
+		if err != nil {
+			fmt.Printf("获取输出信息失败: %v\n", err)
+			return true
 		}
+		name := string(info.Name)
+		crtc := info.Crtc
+		crtcInfo, err := randr.GetCrtcInfo(X, crtc, 0).Reply()
+		if err != nil {
+			fmt.Printf("获取CRTC信息失败: %v\n", err)
+			return true
+		}
+		fmt.Printf("> monitor: %s (id=0x%x)\n", name, uint32(output))
+		fmt.Printf("    pos: (%d, %d)  size: %dx%d\n",
+			crtcInfo.X, crtcInfo.Y, crtcInfo.Width, crtcInfo.Height)
+		// Linux下主显示器判断不统一，暂不区分
+		// 工作区可通过 _NET_WORKAREA 获取，这里略
+		return true
 		return true
 	})
+}
+
+func getRootWindow(X *xgb.Conn) xproto.Window {
+	setup := xproto.Setup(X)
+	return setup.DefaultScreen(X).Root
 }
