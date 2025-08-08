@@ -14,7 +14,7 @@ only using hotkeys:
 
 ## Install
 
-1. Go to [Releases](https://github.com/ahmetb/RectangleWin/releases) and
+1. Go to [Releases](https://github.com/ahmetb/RectangleLinux/releases) and
    download the suitable binary for your architecture (typically x64).
 
 2. Launch the `.exe` file. Now the program icon should be visible on system

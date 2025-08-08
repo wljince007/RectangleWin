@@ -3,7 +3,7 @@
 package w32ex
 
 import (
-	"github.com/ahmetb/RectangleWin/w32"
+	"github.com/ahmetb/RectangleLinux/w32"
 )
 
 // 仅用于接口兼容，Linux下无实际功能

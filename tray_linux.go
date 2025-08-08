@@ -43,7 +43,7 @@ var systray = struct {
 //go:embed assets/tray_icon.png
 var icon []byte
 
-const repo = "https://github.com/ahmetb/RectangleWin"
+const repo = "https://github.com/ahmetb/RectangleLinux"
 
 func initTray() {
 	systray.Run(onReady, onExit)

@@ -8,7 +8,7 @@ import (
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/xprop"
 	"github.com/BurntSushi/xgbutil/xwindow"
-	"github.com/ahmetb/RectangleWin/w32"
+	"github.com/ahmetb/RectangleLinux/w32"
 )
 
 func isZonableWindow(hwnd w32.HWND) bool {

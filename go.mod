@@ -1,4 +1,4 @@
-module github.com/ahmetb/RectangleWin
+module github.com/ahmetb/RectangleLinux
 
 go 1.17
 

@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/BurntSushi/xgbutil/xevent"
-	"github.com/ahmetb/RectangleWin/w32"
+	"github.com/ahmetb/RectangleLinux/w32"
 )
 
 var (

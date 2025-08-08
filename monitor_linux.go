@@ -8,7 +8,7 @@ import (
 	"github.com/BurntSushi/xgb"
 	"github.com/BurntSushi/xgb/randr"
 	"github.com/BurntSushi/xgb/xproto"
-	"github.com/ahmetb/RectangleWin/w32"
+	"github.com/ahmetb/RectangleLinux/w32"
 )
 
 // EnumMonitors 遍历所有物理显示器，回调每个显示器的 w32.HMONITOR（用output id代替）

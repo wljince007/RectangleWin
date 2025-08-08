@@ -3,7 +3,7 @@
 package main
 
 import (
-	"github.com/ahmetb/RectangleWin/w32"
+	"github.com/ahmetb/RectangleLinux/w32"
 )
 
 // 区域分割与合并函数，接口与 Windows 保持一致

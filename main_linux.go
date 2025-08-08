@@ -10,9 +10,9 @@ import (
 	"reflect"
 	"runtime"
 
-	"github.com/ahmetb/RectangleWin/w32"
+	"github.com/ahmetb/RectangleLinux/w32"
 
-	"github.com/ahmetb/RectangleWin/w32ex"
+	"github.com/ahmetb/RectangleLinux/w32ex"
 )
 
 var lastResized w32.HWND
