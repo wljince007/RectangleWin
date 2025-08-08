@@ -26,7 +26,7 @@
 // 按键处理
 void handleShortKey(XKeyEvent xkey)
 {
-    printf("%s","Key has been press and release");
+    LOG("%s","Key has been press and release");
     system("notify-send Hello");
 }
 
@@ -36,7 +36,7 @@ int main()
     Display * display = XOpenDisplay(NULL);
     if(display == NULL)
     {
-        printf("Unable to open X display\n");
+        LOG("Unable to open X display\n");
     }
 
     // 绑定按键
@@ -44,7 +44,7 @@ int main()
     for (int screen = 0; screen < ScreenCount (display); screen++)
     {
         Window grab_window = RootWindow (display, screen);
-        printf("Current screen %d, current window %ld\n", screen, grab_window);
+        LOG("Current screen %d, current window %ld\n", screen, grab_window);
 
         KeyCode customKeyCode = XKeysymToKeycode(display, XK_Z);
         uint modifiers = ControlMask | ShiftMask;
@@ -65,10 +65,10 @@ int main()
             switch (event.type) 
             {
                 case KeyPress:
-					printf("KeyPress");
+                    LOG("KeyPress");
                     break;
                 case KeyRelease:
-					printf("KeyRelease");
+                    LOG("KeyRelease");
                     handleShortKey(event.xkey);
                     matched = True;
                     break;
