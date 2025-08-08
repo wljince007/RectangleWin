@@ -26,7 +26,7 @@ func main() {
 	// and keybind.KeyReleaseFun.
 	cb1 := keybind.KeyPressFun(
 		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
-			log.Println("Key press!")
+			log.Println("Mod4-j Key pressed!")
 		})
 
 	// We can now attach the callback to a particular window and key
@@ -45,11 +45,33 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// 绑定全局快捷键 "Ctrl+Alt+G"，这个+的写法是不行的,应该是"Control-mod1-G"
+	keystr := "Mod4-G" //Super+g
+	keystr = "control-G"
+	keystr = "shift-G"
+	keystr = "control-shift-G"
+	keystr = "mod1-G" //alt+g
+	keystr = "Control-mod1-G"
+	keybind.KeyPressFun(
+		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
+			println("全局快捷键触发!")
+		},
+	).Connect(X, X.RootWin(), keystr, true) // true 表示自动抓取按键
+
 	// We can even attach multiple callbacks to the same key.
 	err = keybind.KeyPressFun(
 		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
-			log.Println("A second handler always happens after the first.")
+			log.Println("Mod4-j Key pressed! A second handler always happens after the first.")
 		}).Connect(X, X.RootWin(), "Mod4-j", true)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// second keybild
+	err = keybind.KeyPressFun(
+		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
+			log.Println("Mod4-k  Key pressed!")
+		}).Connect(X, X.RootWin(), "Mod4-k", true)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -64,9 +86,9 @@ func main() {
 			// from all KeyPress *and* KeyRelease handlers.
 			keybind.Detach(X, X.RootWin())
 
-			log.Printf("Detached all Key{Press,Release}Events from the "+
+			log.Printf("Mod4-l  Key pressed! Detached all Key{Press,Release}Events from the "+
 				"root window (%d).", X.RootWin())
-		}).Connect(X, X.RootWin(), "Mod4-Shift-q", true)
+		}).Connect(X, X.RootWin(), "Mod4-l", true)
 	if err != nil {
 		log.Fatal(err)
 	}
