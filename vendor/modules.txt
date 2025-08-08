@@ -1,0 +1,26 @@
+# github.com/BurntSushi/xgb v0.0.0-20210121224620-deaf085860bc
+## explicit
+github.com/BurntSushi/xgb
+github.com/BurntSushi/xgb/randr
+github.com/BurntSushi/xgb/render
+github.com/BurntSushi/xgb/shape
+github.com/BurntSushi/xgb/xinerama
+github.com/BurntSushi/xgb/xproto
+# github.com/BurntSushi/xgbutil v0.0.0-20190907113008-ad855c713046
+## explicit
+github.com/BurntSushi/xgbutil
+github.com/BurntSushi/xgbutil/ewmh
+github.com/BurntSushi/xgbutil/icccm
+github.com/BurntSushi/xgbutil/keybind
+github.com/BurntSushi/xgbutil/mousebind
+github.com/BurntSushi/xgbutil/xevent
+github.com/BurntSushi/xgbutil/xprop
+github.com/BurntSushi/xgbutil/xrect
+github.com/BurntSushi/xgbutil/xwindow
+# github.com/gonutz/w32/v2 v2.2.2
+## explicit; go 1.11
+github.com/gonutz/w32/v2
+# golang.org/x/sys v0.1.0
+## explicit; go 1.17
+golang.org/x/sys/internal/unsafeheader
+golang.org/x/sys/windows

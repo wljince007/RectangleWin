@@ -1,101 +1,96 @@
-//go:build windows
-
-// Copyright 2022 Ahmet Alp Balkan
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+//go:build linux
 
 package main
 
 import (
 	"strings"
 
-	"github.com/ahmetb/RectangleLinux/w32ex"
-	"github.com/gonutz/w32/v2"
-)
-
-const (
-	GWL_EXSTYLE = -20
-	GWL_STYLE   = -16
+	"github.com/BurntSushi/xgb/xproto"
+	"github.com/BurntSushi/xgbutil/xprop"
+	"github.com/BurntSushi/xgbutil/xwindow"
+	"github.com/ahmetb/RectangleLinux/w32"
 )
 
 func isZonableWindow(hwnd w32.HWND) bool {
 	if hwnd == 0 {
 		return false
 	}
+	xu := w32.GetXConn()
+	if xu == nil {
+		return false
+	}
+	// 判断窗口类型
+	typ, _ := xprop.GetProperty(xu, xproto.Window(hwnd), "_NET_WM_WINDOW_TYPE")
+	if typ != nil && strings.Contains(string(typ.Value), "_DOCK") {
+		return false
+	}
+	// 判断窗口已映射且为正常窗口
+	attrs, err := xproto.GetWindowAttributes(xu.Conn(), xproto.Window(hwnd)).Reply()
+	if err != nil || attrs.MapState != xproto.MapStateViewable {
+		return false
+	}
+	// 判断有无可见owner
 	return isStandardWindow(hwnd) && hasNoVisibleOwner(hwnd)
 }
 
 func hasNoVisibleOwner(hwnd w32.HWND) bool {
-	owner := w32.GetWindow(hwnd, w32.GW_OWNER)
-	if owner == 0 {
+	xu := w32.GetXConn()
+	if xu == nil {
 		return true
 	}
-	if !w32.IsWindowVisible(owner) {
+	// TransientFor 相当于 owner
+	prop, _ := xprop.GetProperty(xu, xproto.Window(hwnd), "WM_TRANSIENT_FOR")
+	if prop == nil || len(prop.Value) < 4 {
 		return true
 	}
-	rect := w32.GetWindowRect(owner)
-	if rect == nil {
-		return false
+	ownerId := uint32(prop.Value[0]) | uint32(prop.Value[1])<<8 | uint32(prop.Value[2])<<16 | uint32(prop.Value[3])<<24
+	attrs, err := xproto.GetWindowAttributes(xu.Conn(), xproto.Window(ownerId)).Reply()
+	if err != nil || attrs.MapState != xproto.MapStateViewable {
+		return true
 	}
-	return rect.Width() == 0 || rect.Height() == 0
+	// 判断owner窗口大小
+	owner := xwindow.New(xu, xproto.Window(ownerId))
+	geom, err := owner.Geometry()
+	if err != nil || geom.Width() == 0 || geom.Height() == 0 {
+		return true
+	}
+	return false
 }
 
 func isStandardWindow(hwnd w32.HWND) bool {
-	// adapted from https://github.com/microsoft/PowerToys/blob/7d0304fd06939d9f552e75be9c830db22f8ff9e2/src/modules/fancyzones/FancyZonesLib/util.cpp#L403
-	if w32ex.GetAncestor(hwnd, w32ex.GA_ROOT) != hwnd ||
-		!w32.IsWindowVisible(hwnd) {
+	if hwnd == 0 {
 		return false
 	}
-
-	for _, sysWindow := range []w32.HWND{w32.GetDesktopWindow(), w32ex.GetShellWindow()} {
-		if hwnd == sysWindow {
-			return false
-		}
-	}
-
-	style := w32.GetWindowLong(hwnd, GWL_STYLE)
-	// a window with think frame and minimize/maximize buttons
-	if uint32(style)&w32.WS_POPUP == w32.WS_POPUP &&
-		style&w32.WS_THICKFRAME == w32.WS_THICKFRAME &&
-		style&w32.WS_MINIMIZEBOX == 0 &&
-		style&w32.WS_MAXIMIZEBOX == 0 {
+	xu := w32.GetXConn()
+	if xu == nil {
 		return false
 	}
-	exStyle := w32.GetWindowLong(hwnd, GWL_EXSTYLE)
-	if uint32(style)&w32.WS_CHILD == w32.WS_CHILD ||
-		style&w32.WS_DISABLED == w32.WS_DISABLED ||
-		exStyle&w32.WS_EX_TOOLWINDOW == w32.WS_EX_TOOLWINDOW ||
-		exStyle&w32.WS_EX_NOACTIVATE == w32.WS_EX_NOACTIVATE {
+	// 常规窗口类型
+	typ, _ := xprop.GetProperty(xu, xproto.Window(hwnd), "_NET_WM_WINDOW_TYPE")
+	if typ == nil || !strings.Contains(string(typ.Value), "NORMAL") {
 		return false
 	}
-
-	className, ok := w32.GetClassName(hwnd)
-	if !ok {
-		panic("GetClassName failed")
+	attrs, err := xproto.GetWindowAttributes(xu.Conn(), xproto.Window(hwnd)).Reply()
+	if err != nil || attrs.MapState != xproto.MapStateViewable {
+		return false
 	}
-	return !isSystemClassName(className)
+	// 简单排除桌面、托盘等特殊窗口
+	wmName, _ := xprop.GetProperty(xu, xproto.Window(hwnd), "_NET_WM_NAME")
+	if wmName != nil && isSystemClassName(string(wmName.Value)) {
+		return false
+	}
+	return true
 }
 
 func isSystemClassName(className string) bool {
-	// adapted from https://github.com/microsoft/PowerToys/blob/7d0304fd06939d9f552e75be9c830db22f8ff9e2/tools/FancyZones_zonable_tester/main.cpp#L135
-	for _, c := range []string{
-		"SysListView32",
-		"WorkerW",
-		"Shell_TrayWnd",
-		"Shell_SecondaryTrayWnd",
-		"Progman",
-	} {
-		if strings.EqualFold(c, className) {
+	// Linux下用名称/类型简单判断
+	sysNames := []string{
+		"Dock", "Panel", "desktop", "notification", "tray", "bar",
+		"SysListView32", "WorkerW", "Shell_TrayWnd", "Shell_SecondaryTrayWnd", "Progman",
+	}
+	className = strings.ToLower(className)
+	for _, n := range sysNames {
+		if strings.Contains(className, strings.ToLower(n)) {
 			return true
 		}
 	}
