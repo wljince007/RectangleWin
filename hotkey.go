@@ -1,3 +1,5 @@
+//go:build windows
+
 // Copyright 2022 Ahmet Alp Balkan
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,41 +28,43 @@ var (
 )
 
 type HotKey struct {
-	id, mod, vk int
-	callback    func()
+	Id      int
+	Mod     int
+	Key     int
+	Handler func()
 }
 
-func (h HotKey) String() string { return fmt.Sprintf("mod=0x%x,vk=%d", h.mod, h.vk) }
+func (h HotKey) String() string { return fmt.Sprintf("mod=0x%x,Key=%d", h.Mod, h.Key) }
 
 func (h HotKey) Describe() string {
 	var out string
-	if h.mod&MOD_WIN == MOD_WIN {
+	if h.Mod&MOD_WIN == MOD_WIN {
 		out += modKeyNames[MOD_WIN] + " + "
 	}
-	if h.mod&MOD_CONTROL == MOD_CONTROL {
+	if h.Mod&MOD_CONTROL == MOD_CONTROL {
 		out += modKeyNames[MOD_CONTROL] + " + "
 	}
-	if h.mod&MOD_ALT == MOD_ALT {
+	if h.Mod&MOD_ALT == MOD_ALT {
 		out += modKeyNames[MOD_ALT] + " + "
 	}
-	if h.mod&MOD_SHIFT == MOD_SHIFT {
+	if h.Mod&MOD_SHIFT == MOD_SHIFT {
 		out += modKeyNames[MOD_SHIFT] + " + "
 	}
-	if v, ok := keyNames[h.vk]; ok {
+	if v, ok := keyNames[h.Key]; ok {
 		out += v
 	} else {
-		out += fmt.Sprintf("UNKNOWN KEY(0x%x)", h.vk)
+		out += fmt.Sprintf("UNKNOWN KEY(0x%x)", h.Key)
 	}
 	return out
 }
 
 func RegisterHotKey(h HotKey) bool {
-	if _, ok := hotkeyRegistrations[h.id]; ok {
+	if _, ok := hotkeyRegistrations[h.Id]; ok {
 		panic("hotkey id already registered") // TODO ok for now
 	}
-	ok := w32ex.RegisterHotKey(0, h.id, h.mod, h.vk)
+	ok := w32ex.RegisterHotKey(0, h.Id, h.Mod, h.Key)
 	if ok {
-		hotkeyRegistrations[h.id] = &h
+		hotkeyRegistrations[h.Id] = &h
 	}
 	return ok
 }
@@ -82,7 +86,9 @@ func msgLoop() error {
 				return fmt.Errorf("hotkey without callback: %#v", m)
 			}
 			fmt.Printf("trace: hotkey id=%d (%s)\n", m.WParam, h)
-			h.callback()
+			if h.Handler != nil {
+				h.Handler()
+			}
 		} else {
 			fmt.Printf("unhandled message received:0x%x %d\n", m.Message, m.Message)
 			w32.TranslateMessage(&m)
