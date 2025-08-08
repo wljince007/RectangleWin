@@ -9,6 +9,7 @@ import (
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/xevent"
 	"github.com/ahmetb/RectangleLinux/w32"
+	"github.com/cihub/seelog"
 )
 
 var (
@@ -104,8 +105,8 @@ func msgLoop() error {
 			}
 		}
 	}).Connect(xu, xu.RootWin())
-	fmt.Println("hotkey event loop started")
+	seelog.Debugf("hotkey event loop started")
 	xevent.Main(xu)
-	fmt.Println("hotkey event loop finished")
+	seelog.Debugf("hotkey event loop finished")
 	return nil
 }

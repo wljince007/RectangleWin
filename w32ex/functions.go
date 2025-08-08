@@ -40,5 +40,5 @@ func GetShellWindow() w32.HWND {
 
 // SetProcessDPIAware Linux下无实际作用，仅作占位
 func SetProcessDPIAware() bool {
-	return false
+	return true
 }

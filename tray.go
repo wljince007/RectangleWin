@@ -4,8 +4,9 @@ package main
 
 import (
 	_ "embed"
-	"fmt"
 	"os/exec"
+
+	"github.com/cihub/seelog"
 )
 
 // --- systray dummy stub for Linux ---
@@ -56,7 +57,7 @@ func onReady() {
 
 	autorun, err := AutoRunEnabled()
 	if err != nil {
-		fmt.Printf("autorun state error: %v\n", err)
+		seelog.Errorf("autorun state error: %v\n", err)
 		autorun = false
 	}
 
@@ -65,7 +66,7 @@ func onReady() {
 		for range mRepo.ClickedCh {
 			// Linux下用xdg-open打开浏览器
 			if err := exec.Command("xdg-open", repo).Start(); err != nil {
-				fmt.Printf("failed to launch browser: %v\n", err)
+				seelog.Errorf("failed to launch browser: %v\n", err)
 			}
 		}
 	}()
@@ -78,18 +79,18 @@ func onReady() {
 			if mAutoRun.Checked() {
 				if err := AutoRunDisable(); err != nil {
 					mAutoRun.SetTitle(err.Error())
-					fmt.Printf("warn: autorun disable: %v\n", err)
+					seelog.Errorf("warn: autorun disable: %v\n", err)
 					continue
 				}
-				fmt.Println("disabled autorun")
+				seelog.Debugf("disabled autorun")
 				mAutoRun.Uncheck()
 			} else {
 				if err := AutoRunEnable(); err != nil {
 					mAutoRun.SetTitle(err.Error())
-					fmt.Printf("warn: autorun enable: %v\n", err)
+					seelog.Errorf("warn: autorun enable: %v\n", err)
 					continue
 				}
-				fmt.Println("enabled autorun")
+				seelog.Debugf("enabled autorun")
 				mAutoRun.Check()
 			}
 		}
@@ -100,13 +101,13 @@ func onReady() {
 	mQuit := systray.AddMenuItem("Quit", "")
 	go func() {
 		<-mQuit.ClickedCh
-		fmt.Println("clicked Quit")
+		seelog.Debugf("clicked Quit")
 		systray.Quit()
 	}()
 
-	fmt.Println("tray ready")
+	seelog.Debugf("tray ready")
 }
 
 func onExit() {
-	fmt.Println("onExit invoked")
+	seelog.Debugf("onExit invoked")
 }
