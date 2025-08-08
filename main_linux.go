@@ -11,7 +11,6 @@ import (
 	"runtime"
 
 	"github.com/ahmetb/RectangleWin/w32"
-	"github.com/getlantern/systray"
 
 	"github.com/ahmetb/RectangleWin/w32ex"
 )
@@ -187,7 +186,7 @@ func main() {
 
 	// Linux 下批量注册热键
 	var failedHotKeys []HotKey
-	for i, hk := range hks {
+	for _, hk := range hks {
 		ok := RegisterHotKey(hk)
 		if !ok {
 			failedHotKeys = append(failedHotKeys, hk)
@@ -205,7 +204,7 @@ func main() {
 	go func() {
 		<-exitCh
 		fmt.Println("exit signal received")
-		systray.Quit() // causes WM_CLOSE, WM_QUIT, not sure if a side-effect
+		// systray.Quit() // causes WM_CLOSE, WM_QUIT, not sure if a side-effect
 	}()
 
 	// TODO systray/systray.go already locks the OS thread in init()

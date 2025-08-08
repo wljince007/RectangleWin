@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/BurntSushi/xgbutil/keybind"
 	"github.com/BurntSushi/xgbutil/xevent"
 	"github.com/ahmetb/RectangleWin/w32"
 )
@@ -55,17 +54,17 @@ func RegisterHotKey(h HotKey) bool {
 		return false
 	}
 	// 组合键字符串，如 "Control-Alt-T"
-	keyStr := keyString(h.Mod, h.Key)
-	err := keybind.Register(xu, xu.RootWin(), keyStr, func() {
-		if cb := h.Handler; cb != nil {
-			cb()
-		}
-	})
-	if err == nil {
-		hotkeyRegistrations[h.Id] = &h
-		return true
-	}
-	fmt.Printf("failed to register hotkey: %s (%v)\n", keyStr, err)
+	// keyStr := keyString(h.Mod, h.Key)
+	// err := keybind.Register(xu, xu.RootWin(), keyStr, func() {
+	// 	if cb := h.Handler; cb != nil {
+	// 		cb()
+	// 	}
+	// })
+	// if err == nil {
+	// 	hotkeyRegistrations[h.Id] = &h
+	// 	return true
+	// }
+	// fmt.Printf("failed to register hotkey: %s (%v)\n", keyStr, err)
 	return false
 }
 

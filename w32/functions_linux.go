@@ -29,6 +29,51 @@ func GetXConn() *xgbutil.XUtil {
 }
 
 type HWND uintptr
+type HMONITOR uintptr
+
+// GetDeviceCaps index constants
+const (
+	DRIVERVERSION   = 0
+	TECHNOLOGY      = 2
+	HORZSIZE        = 4
+	VERTSIZE        = 6
+	HORZRES         = 8
+	VERTRES         = 10
+	LOGPIXELSX      = 88
+	LOGPIXELSY      = 90
+	BITSPIXEL       = 12
+	PLANES          = 14
+	NUMBRUSHES      = 16
+	NUMPENS         = 18
+	NUMFONTS        = 22
+	NUMCOLORS       = 24
+	NUMMARKERS      = 20
+	ASPECTX         = 40
+	ASPECTY         = 42
+	ASPECTXY        = 44
+	PDEVICESIZE     = 26
+	CLIPCAPS        = 36
+	SIZEPALETTE     = 104
+	NUMRESERVED     = 106
+	COLORRES        = 108
+	PHYSICALWIDTH   = 110
+	PHYSICALHEIGHT  = 111
+	PHYSICALOFFSETX = 112
+	PHYSICALOFFSETY = 113
+	SCALINGFACTORX  = 114
+	SCALINGFACTORY  = 115
+	VREFRESH        = 116
+	DESKTOPHORZRES  = 118
+	DESKTOPVERTRES  = 117
+	BLTALIGNMENT    = 119
+	SHADEBLENDCAPS  = 120
+	COLORMGMTCAPS   = 121
+	RASTERCAPS      = 38
+	CURVECAPS       = 28
+	LINECAPS        = 30
+	POLYGONALCAPS   = 32
+	TEXTCAPS        = 34
+)
 
 type RECT struct {
 	Left, Top, Right, Bottom int32
@@ -134,6 +179,11 @@ func DwmGetWindowAttributeEXTENDED_FRAME_BOUNDS(hwnd HWND) (bool, RECT) {
 
 func ShowWindow(hwnd HWND, cmdShow int) bool {
 	return true
+}
+
+func GetWindowLong(hwnd HWND, index int) int32 {
+	//todo 待实现
+	return 0
 }
 
 func SetWindowPos(hwnd HWND, hwndInsertAfter HWND, x, y, cx, cy int, uFlags uint32) bool {
