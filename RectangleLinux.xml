@@ -1,7 +1,7 @@
 <seelog>
     <outputs formatid="main">
 		<console />
-        <filter levels="critical,info,error,warn">
+        <filter levels="critical,info,error,warn,debug">
             <buffered size="10000" flushperiod="1000">
 			    <rollingfile type="date" filename="server_log/RectangleLinux.log" datepattern="2006.01.02" maxrolls="30"/>
     		</buffered>

@@ -206,10 +206,12 @@ func resize(hwnd w32.HWND, f resizeFunc) (bool, error) {
 	hdc := w32.GetDC(hwnd)
 	displayDPI := w32.GetDeviceCaps(hdc, w32.LOGPIXELSY)
 	if !w32.ReleaseDC(hwnd, hdc) {
+		seelog.Debugf("\n\n")
 		return false, fmt.Errorf("failed to ReleaseDC:%d", w32.GetLastError())
 	}
 	var monInfo w32.MONITORINFO
 	if !w32.GetMonitorInfo(mon, &monInfo) {
+		seelog.Debugf("\n\n")
 		return false, fmt.Errorf("failed to GetMonitorInfo:%d", w32.GetLastError())
 	}
 
@@ -221,7 +223,7 @@ func resize(hwnd w32.HWND, f resizeFunc) (bool, error) {
 	windowDPI := w32ex.GetDpiForWindow(hwnd)
 	resizedFrame := resizeForDpi(frame, int32(windowDPI), int32(displayDPI))
 
-	seelog.Debugf("\n\n> window: 0x%x %#v (w:%d,h:%d) mon=0x%X(@ display DPI:%d)", hwnd, rect, rect.Width(), rect.Height(), mon, displayDPI)
+	seelog.Debugf("> window: 0x%x %#v (w:%d,h:%d) mon=0x%X(@ display DPI:%d)", hwnd, rect, rect.Width(), rect.Height(), mon, displayDPI)
 	seelog.Debugf("> DWM frame:        %#v (W:%d,H:%d) @ window DPI=%v", frame, frame.Width(), frame.Height(), windowDPI)
 	seelog.Debugf("> DPI-less frame:   %#v (W:%d,H:%d)", resizedFrame, resizedFrame.Width(), resizedFrame.Height())
 
@@ -242,6 +244,7 @@ func resize(hwnd w32.HWND, f resizeFunc) (bool, error) {
 	lastResized = hwnd
 	if sameRect(rect, &newPos) {
 		seelog.Debugf("no resize")
+		seelog.Debugf("\n\n")
 		return false, nil
 	}
 
@@ -250,10 +253,13 @@ func resize(hwnd w32.HWND, f resizeFunc) (bool, error) {
 		return false, fmt.Errorf("failed to normalize window ShowWindow:%d", w32.GetLastError())
 	}
 	if !w32.SetWindowPos(hwnd, 0, int(newPos.Left), int(newPos.Top), int(newPos.Width()), int(newPos.Height()), w32.SWP_NOZORDER|w32.SWP_NOACTIVATE) {
+		seelog.Debugf("\n\n")
 		return false, fmt.Errorf("failed to SetWindowPos:%d", w32.GetLastError())
 	}
 	rect = w32.GetWindowRect(hwnd)
 	seelog.Debugf("> post-resize: %#v(W:%d,H:%d)", rect, rect.Width(), rect.Height())
+
+	seelog.Debugf("\n\n")
 	return true, nil
 }
 

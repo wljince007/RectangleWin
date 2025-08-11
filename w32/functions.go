@@ -181,7 +181,16 @@ func GetMonitorInfo(mon uintptr, info *MONITORINFO) bool {
 	if info != nil {
 		*info = MONITORINFO{}
 	}
-	info.RcWork = RECT{0, 0, 3840, 2160}
+	xu := GetXConn()
+	if xu == nil {
+		return false
+	}
+
+	// 获取屏幕尺寸
+	geom := xwindow.RootGeometry(xu)
+	log.Printf("RootGeometry geom:%v", geom)
+	info.RcWork = RECT{int32(geom.X()), int32(geom.Y()), int32(geom.X() + geom.Width()), int32(geom.Y() + geom.Height())}
+	// info.RcWork = RECT{int32(geom.X()), int32(geom.Y()), int32(geom.Width()), int32(geom.Height())}
 	return true
 }
 
