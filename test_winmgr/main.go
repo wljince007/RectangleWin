@@ -4,15 +4,23 @@ import (
 	"log"
 
 	"github.com/BurntSushi/xgbutil"
+	"github.com/BurntSushi/xgbutil/ewmh"
 	"github.com/BurntSushi/xgbutil/keybind"
 	"github.com/BurntSushi/xgbutil/xevent"
+	"github.com/BurntSushi/xgbutil/xwindow"
 )
 
 func main() {
-	// Connect to the X server using the DISPLAY environment variable.
+	// Connect to the X server
 	X, err := xgbutil.NewConn()
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	// 获取屏幕尺寸
+	geom, err := xwindow.New(X, X.RootWin()).Geometry()
+	if err != nil {
+		log.Fatal("获取屏幕尺寸失败:", err)
 	}
 
 	// Anytime the keybind (mousebind) package is used, keybind.Initialize
@@ -26,77 +34,49 @@ func main() {
 		keybind.Detach(X, X.RootWin())
 	}()
 
-	// Before attaching callbacks, wrap them in a callback function type.
-	// The keybind package exposes two such callback types: keybind.KeyPressFun
-	// and keybind.KeyReleaseFun.
-	cb1 := keybind.KeyPressFun(
-		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
-			log.Println("Mod4-j Key pressed!")
-		})
-
-	// We can now attach the callback to a particular window and key
-	// combination. This particular example grabs a key on the root window,
-	// which makes it a global keybinding.
-	// Also, "Mod4-j" typically corresponds to pressing down the "Super" or
-	// "Windows" key on your keyboard, and then pressing the letter "j".
-	// N.B. This approach works by issuing a passive grab on the window
-	// specified. To respond to Key{Press,Release} events without a grab, use
-	// the xevent.Key{Press,Release}Fun callback function types instead.
-	err = cb1.Connect(X, X.RootWin(), "Mod4-j", true)
-
-	// A keybinding can fail if the key string could not be parsed, or if you're
-	// trying to bind a key that has already been grabbed by another client.
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// 绑定全局快捷键 "Ctrl+Alt+G"，这个+的写法是不行的,应该是"Control-mod1-G"
 	keystr := "Mod4-G" //Super+g
-	keystr = "control-G"
-	keystr = "shift-G"
-	keystr = "control-shift-G"
-	keystr = "mod1-G" //alt+g
-	keystr = "Control-mod1-G"
+
+	keystr = "Control-mod1-1"
 	keybind.KeyPressFun(
 		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
-			println("全局快捷键触发!")
+			// 获取活动窗口
+			win, err := ewmh.ActiveWindowGet(X)
+			if err != nil {
+				log.Fatal("获取活动窗口失败:", err)
+			}
+			// 计算右半区尺寸并调整窗口
+			width := geom.Width() / 2
+			height := geom.Height() / 2
+			x := geom.Width() / 2
+			y := 0
+
+			err = ewmh.MoveresizeWindow(X, win, x, y, width, height)
+			if err != nil {
+				log.Fatal("调整窗口失败:", err)
+			}
 		},
 	).Connect(X, X.RootWin(), keystr, true) // true 表示自动抓取按键
 
-	// We can even attach multiple callbacks to the same key.
-	err = keybind.KeyPressFun(
+	keystr = "Control-mod1-2"
+	keybind.KeyPressFun(
 		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
-			log.Println("Mod4-j Key pressed! A second handler always happens after the first.")
-		}).Connect(X, X.RootWin(), "Mod4-j", true)
-	if err != nil {
-		log.Fatal(err)
-	}
+			// 获取活动窗口
+			win, err := ewmh.ActiveWindowGet(X)
+			if err != nil {
+				log.Fatal("获取活动窗口失败:", err)
+			}
+			// 计算右半区尺寸并调整窗口
+			width := geom.Width() / 2
+			height := geom.Height() / 2
+			x := 0
+			y := 0
 
-	// second keybild
-	err = keybind.KeyPressFun(
-		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
-			log.Println("Mod4-k  Key pressed!")
-		}).Connect(X, X.RootWin(), "Mod4-k", true)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Finally, if we want this client to stop responding to key events, we
-	// can attach another handler that, when run, detaches all previous
-	// handlers.
-	// This time, we'll show an example of a KeyRelease binding.
-	err = keybind.KeyReleaseFun(
-		func(X *xgbutil.XUtil, e xevent.KeyReleaseEvent) {
-			// Use keybind.Detach to detach the root window
-			// from all KeyPress *and* KeyRelease handlers.
-			keybind.Detach(X, X.RootWin())
-
-			log.Printf("Mod4-l  Key pressed! Detached all Key{Press,Release}Events from the "+
-				"root window (%d).", X.RootWin())
-		}).Connect(X, X.RootWin(), "Mod4-l", true)
-	if err != nil {
-		log.Fatal(err)
-	}
+			err = ewmh.MoveresizeWindow(X, win, x, y, width, height)
+			if err != nil {
+				log.Fatal("调整窗口失败:", err)
+			}
+		},
+	).Connect(X, X.RootWin(), keystr, true) // true 表示自动抓取按键
 
 	// Finally, start the main event loop. This will route any appropriate
 	// KeyPressEvents to your callback function.
