@@ -11,6 +11,7 @@ dist/
 
 RectangleLinux
 test_cpp/xHotKeyMgr
-test/test
+test_winmgr/test_winmgr
+test_keybind/test_keybind
 server_log
 log.txt

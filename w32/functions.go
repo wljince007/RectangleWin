@@ -11,6 +11,7 @@ import (
 	"github.com/BurntSushi/xgbutil/ewmh"
 	"github.com/BurntSushi/xgbutil/xprop"
 	"github.com/BurntSushi/xgbutil/xwindow"
+	"github.com/cihub/seelog"
 )
 
 var (
@@ -143,11 +144,14 @@ func GetWindowRect(hwnd HWND) *RECT {
 	if xu == nil {
 		return &RECT{}
 	}
+
 	win := xwindow.New(xu, xproto.Window(hwnd))
-	geom, err := win.Geometry()
+	geom, err := win.DecorGeometry()
 	if err != nil {
 		return &RECT{}
 	}
+	seelog.Debugf("window: 0x%x geom:%#v", hwnd, geom)
+
 	absX, absY := int(geom.X()), int(geom.Y())
 	return &RECT{
 		Left:   int32(absX),
@@ -177,6 +181,7 @@ func GetMonitorInfo(mon uintptr, info *MONITORINFO) bool {
 	if info != nil {
 		*info = MONITORINFO{}
 	}
+	info.RcWork = RECT{0, 0, 3840, 2160}
 	return true
 }
 

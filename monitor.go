@@ -75,7 +75,6 @@ func printMonitors() {
 		// Linux下主显示器判断不统一，暂不区分
 		// 工作区可通过 _NET_WORKAREA 获取，这里略
 		return true
-		return true
 	})
 }
 

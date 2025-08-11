@@ -197,10 +197,10 @@ func center(disp, cur w32.RECT) w32.RECT {
 }
 
 func resize(hwnd w32.HWND, f resizeFunc) (bool, error) {
-	if !isZonableWindow(hwnd) {
-		seelog.Errorf("warn: non-zonable window: %s", w32.GetWindowText(hwnd))
-		return false, nil
-	}
+	// if !isZonableWindow(hwnd) {
+	// 	seelog.Errorf("warn: non-zonable window: %s", w32.GetWindowText(hwnd))
+	// 	return false, nil
+	// }
 	rect := w32.GetWindowRect(hwnd)
 	mon := w32.MonitorFromWindow(hwnd, w32.MONITOR_DEFAULTTONEAREST)
 	hdc := w32.GetDC(hwnd)
@@ -213,14 +213,15 @@ func resize(hwnd w32.HWND, f resizeFunc) (bool, error) {
 		return false, fmt.Errorf("failed to GetMonitorInfo:%d", w32.GetLastError())
 	}
 
-	ok, frame := w32.DwmGetWindowAttributeEXTENDED_FRAME_BOUNDS(hwnd)
-	if !ok {
-		return false, fmt.Errorf("failed to DwmGetWindowAttributeEXTENDED_FRAME_BOUNDS:%d", w32.GetLastError())
-	}
+	// ok, frame := w32.DwmGetWindowAttributeEXTENDED_FRAME_BOUNDS(hwnd)
+	// if !ok {
+	// 	return false, fmt.Errorf("failed to DwmGetWindowAttributeEXTENDED_FRAME_BOUNDS:%d", w32.GetLastError())
+	// }
+	frame := *rect
 	windowDPI := w32ex.GetDpiForWindow(hwnd)
 	resizedFrame := resizeForDpi(frame, int32(windowDPI), int32(displayDPI))
 
-	seelog.Debugf("> window: 0x%x %#v (w:%d,h:%d) mon=0x%X(@ display DPI:%d)", hwnd, rect, rect.Width(), rect.Height(), mon, displayDPI)
+	seelog.Debugf("\n\n> window: 0x%x %#v (w:%d,h:%d) mon=0x%X(@ display DPI:%d)", hwnd, rect, rect.Width(), rect.Height(), mon, displayDPI)
 	seelog.Debugf("> DWM frame:        %#v (W:%d,H:%d) @ window DPI=%v", frame, frame.Width(), frame.Height(), windowDPI)
 	seelog.Debugf("> DPI-less frame:   %#v (W:%d,H:%d)", resizedFrame, resizedFrame.Width(), resizedFrame.Height())
 
