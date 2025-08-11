@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
+	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/ewmh"
 	"github.com/BurntSushi/xgbutil/keybind"
@@ -63,9 +65,24 @@ func main() {
 
 	// 获取屏幕尺寸
 	geom, err := xwindow.New(X, X.RootWin()).Geometry()
+	// geom, err := xwindow.New(X, X.RootWin()).DecorGeometry()
 	if err != nil {
 		log.Fatal("获取屏幕尺寸失败:", err)
 	}
+	log.Printf("geom:%v", geom)
+
+	dDesktopGeometry, err := ewmh.DesktopGeometryGet(X)
+	log.Printf("dDesktopGeometry:%v", *dDesktopGeometry)
+
+	// // 获取窗口边框尺寸（含标题栏）
+	// extents, err := ewmh.FrameExtentsGet(X, X.RootWin())
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// geom.YSet(extents.Bottom)
+	// geom.HeightSet(geom.Height() - geom.Y())
+	// log.Printf("extents:%v", extents)
+	// log.Printf("geom - extents:%v", geom)
 
 	// Anytime the keybind (mousebind) package is used, keybind.Initialize
 	// *should* be called once. It isn't strictly necessary, but allows your
@@ -90,7 +107,7 @@ func main() {
 			}
 			// 计算右半区尺寸并调整窗口
 			width := geom.Width() / 2
-			height := geom.Height() / 2
+			height := (geom.Height() - 27) / 2
 			x := geom.Width() / 2
 			y := 0
 
@@ -109,11 +126,76 @@ func main() {
 			if err != nil {
 				log.Fatal("获取活动窗口失败:", err)
 			}
+
+			// 获取窗口边框尺寸
+			extents, err := ewmh.FrameExtentsGet(X, win)
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("标题栏: %v 像素\n", extents)
+
+			curgeom, err := xwindow.New(X, xproto.Window(win)).DecorGeometry()
+			fmt.Printf("当前: %v \n", curgeom)
+
 			// 计算右半区尺寸并调整窗口
 			width := geom.Width() / 2
-			height := geom.Height() / 2
+			height := (geom.Height() - 27) / 2
 			x := 0
 			y := 0
+
+			err = ewmh.MoveresizeWindow(X, win, x, y, width, height)
+			if err != nil {
+				log.Fatal("调整窗口失败:", err)
+			}
+		},
+	).Connect(X, X.RootWin(), keystr, true) // true 表示自动抓取按键
+
+	keystr = "Control-mod1-3"
+	keybind.KeyPressFun(
+		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
+			// 获取活动窗口
+			win, err := ewmh.ActiveWindowGet(X)
+			if err != nil {
+				log.Fatal("获取活动窗口失败:", err)
+			}
+
+			// 获取窗口边框尺寸
+			extents, err := ewmh.FrameExtentsGet(X, win)
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("标题栏: %v 像素\n", extents)
+
+			curgeom, err := xwindow.New(X, xproto.Window(win)).DecorGeometry()
+			fmt.Printf("当前: %v \n", curgeom)
+
+			// 计算右半区尺寸并调整窗口
+			width := geom.Width() / 2
+			height := (geom.Height() - 27) / 2
+			x := 0
+			y := (geom.Height()-27)/2 + 27
+
+			err = ewmh.MoveresizeWindow(X, win, x, y, width, height)
+			if err != nil {
+				log.Fatal("调整窗口失败:", err)
+			}
+		},
+	).Connect(X, X.RootWin(), keystr, true) // true 表示自动抓取按键
+
+	keystr = "Control-mod1-4"
+	keybind.KeyPressFun(
+		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
+			// 获取活动窗口
+			win, err := ewmh.ActiveWindowGet(X)
+			if err != nil {
+				log.Fatal("获取活动窗口失败:", err)
+			}
+
+			// 计算右半区尺寸并调整窗口
+			width := geom.Width() / 2
+			height := (geom.Height() - 27) / 2
+			x := geom.Width() / 2
+			y := (geom.Height()-27)/2 + 27
 
 			err = ewmh.MoveresizeWindow(X, win, x, y, width, height)
 			if err != nil {
