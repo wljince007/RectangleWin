@@ -3,12 +3,12 @@
 package w32
 
 import (
-	"os/exec"
-	"strconv"
+	"log"
 	"sync"
 
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
+	"github.com/BurntSushi/xgbutil/ewmh"
 	"github.com/BurntSushi/xgbutil/xprop"
 	"github.com/BurntSushi/xgbutil/xwindow"
 )
@@ -28,7 +28,7 @@ func GetXConn() *xgbutil.XUtil {
 	return xConn
 }
 
-type HWND uintptr
+type HWND uint32
 type HMONITOR uintptr
 
 // GetDeviceCaps index constants
@@ -107,13 +107,20 @@ func GetForegroundWindow() HWND {
 	if xu == nil {
 		return 0
 	}
-	prop, err := xprop.GetProperty(xu, xu.RootWin(), "_NET_ACTIVE_WINDOW")
-	if err != nil || prop == nil || len(prop.Value) < 4 {
-		return 0
+
+	win, err := ewmh.ActiveWindowGet(xu)
+	if err != nil {
+		log.Fatal("获取活动窗口失败:", err)
 	}
-	// _NET_ACTIVE_WINDOW 是一个32位window id（cardinal），用小端字节序
-	winId := uint32(prop.Value[0]) | uint32(prop.Value[1])<<8 | uint32(prop.Value[2])<<16 | uint32(prop.Value[3])<<24
-	return HWND(winId)
+	return (HWND)(win)
+
+	// prop, err := xprop.GetProperty(xu, xu.RootWin(), "_NET_ACTIVE_WINDOW")
+	// if err != nil || prop == nil || len(prop.Value) < 4 {
+	// 	return 0
+	// }
+	// // _NET_ACTIVE_WINDOW 是一个32位window id（cardinal），用小端字节序
+	// winId := uint32(prop.Value[0]) | uint32(prop.Value[1])<<8 | uint32(prop.Value[2])<<16 | uint32(prop.Value[3])<<24
+	// return HWND(winId)
 }
 
 func GetWindowText(hwnd HWND) string {
@@ -187,9 +194,20 @@ func GetWindowLong(hwnd HWND, index int) int32 {
 }
 
 func SetWindowPos(hwnd HWND, hwndInsertAfter HWND, x, y, cx, cy int, uFlags uint32) bool {
-	// 仅处理移动和缩放
-	exec.Command("xdotool", "windowmove", strconv.FormatUint(uint64(hwnd), 10), strconv.Itoa(x), strconv.Itoa(y)).Run()
-	exec.Command("xdotool", "windowsize", strconv.FormatUint(uint64(hwnd), 10), strconv.Itoa(cx), strconv.Itoa(cy)).Run()
+	// // 仅处理移动和缩放
+	// exec.Command("xdotool", "windowmove", strconv.FormatUint(uint64(hwnd), 10), strconv.Itoa(x), strconv.Itoa(y)).Run()
+	// exec.Command("xdotool", "windowsize", strconv.FormatUint(uint64(hwnd), 10), strconv.Itoa(cx), strconv.Itoa(cy)).Run()
+
+	xu := GetXConn()
+	if xu == nil {
+		return false
+	}
+	err := ewmh.MoveresizeWindow(xu, (xproto.Window)(hwnd), x, y, cx, cy)
+	if err != nil {
+		log.Fatal("调整窗口失败:", err)
+		return false
+	}
+
 	return true
 }
 

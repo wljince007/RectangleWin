@@ -14,6 +14,7 @@ github.com/BurntSushi/xgbutil/icccm
 github.com/BurntSushi/xgbutil/keybind
 github.com/BurntSushi/xgbutil/mousebind
 github.com/BurntSushi/xgbutil/xevent
+github.com/BurntSushi/xgbutil/xinerama
 github.com/BurntSushi/xgbutil/xprop
 github.com/BurntSushi/xgbutil/xrect
 github.com/BurntSushi/xgbutil/xwindow
