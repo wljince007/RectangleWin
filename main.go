@@ -5,12 +5,16 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"reflect"
 	"runtime"
 	"runtime/debug"
 
+	"github.com/BurntSushi/xgbutil"
+	"github.com/BurntSushi/xgbutil/keybind"
+	"github.com/BurntSushi/xgbutil/xevent"
 	"github.com/ahmetb/RectangleLinux/w32"
 	"github.com/cihub/seelog"
 
@@ -46,6 +50,95 @@ func main() {
 	}
 	seelog.Debugf("autorun enabled=%v", autorun)
 	printMonitors()
+
+	// Connect to the X server using the DISPLAY environment variable.
+	X, err := xgbutil.NewConn()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Anytime the keybind (mousebind) package is used, keybind.Initialize
+	// *should* be called once. It isn't strictly necessary, but allows your
+	// keybindings to persist even if the keyboard mapping is changed during
+	// run-time. (Assuming you're using the xevent package's event loop.)
+	keybind.Initialize(X)
+
+	// 退出时解关联
+	defer func() {
+		keybind.Detach(X, X.RootWin())
+	}()
+
+	// Before attaching callbacks, wrap them in a callback function type.
+	// The keybind package exposes two such callback types: keybind.KeyPressFun
+	// and keybind.KeyReleaseFun.
+	cb1 := keybind.KeyPressFun(
+		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
+			log.Println("Mod4-j Key pressed!")
+		})
+
+	// We can now attach the callback to a particular window and key
+	// combination. This particular example grabs a key on the root window,
+	// which makes it a global keybinding.
+	// Also, "Mod4-j" typically corresponds to pressing down the "Super" or
+	// "Windows" key on your keyboard, and then pressing the letter "j".
+	// N.B. This approach works by issuing a passive grab on the window
+	// specified. To respond to Key{Press,Release} events without a grab, use
+	// the xevent.Key{Press,Release}Fun callback function types instead.
+	err = cb1.Connect(X, X.RootWin(), "Mod4-j", true)
+
+	// A keybinding can fail if the key string could not be parsed, or if you're
+	// trying to bind a key that has already been grabbed by another client.
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 绑定全局快捷键 "Ctrl+Alt+G"，这个+的写法是不行的,应该是"Control-mod1-G"
+	keystr := "Mod4-G" //Super+g
+	keystr = "control-G"
+	keystr = "shift-G"
+	keystr = "control-shift-G"
+	keystr = "mod1-G" //alt+g
+	keystr = "Control-mod1-G"
+	keybind.KeyPressFun(
+		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
+			println("全局快捷键触发!")
+		},
+	).Connect(X, X.RootWin(), keystr, true) // true 表示自动抓取按键
+
+	// We can even attach multiple callbacks to the same key.
+	err = keybind.KeyPressFun(
+		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
+			log.Println("Mod4-j Key pressed! A second handler always happens after the first.")
+		}).Connect(X, X.RootWin(), "Mod4-j", true)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// second keybild
+	err = keybind.KeyPressFun(
+		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
+			log.Println("Mod4-k  Key pressed!")
+		}).Connect(X, X.RootWin(), "Mod4-k", true)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Finally, if we want this client to stop responding to key events, we
+	// can attach another handler that, when run, detaches all previous
+	// handlers.
+	// This time, we'll show an example of a KeyRelease binding.
+	err = keybind.KeyReleaseFun(
+		func(X *xgbutil.XUtil, e xevent.KeyReleaseEvent) {
+			// Use keybind.Detach to detach the root window
+			// from all KeyPress *and* KeyRelease handlers.
+			keybind.Detach(X, X.RootWin())
+
+			log.Printf("Mod4-l  Key pressed! Detached all Key{Press,Release}Events from the "+
+				"root window (%d).", X.RootWin())
+		}).Connect(X, X.RootWin(), "Mod4-l", true)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	edgeFuncs := [][]resizeFunc{
 		{leftTwoThirds, leftHalf, leftOneThirds},
@@ -84,139 +177,48 @@ func main() {
 	cycleEdgeFuncs := func(i int) { cycleFuncs(edgeFuncs, &edgeFuncTurn, i) }
 	cycleCornerFuncs := func(i int) { cycleFuncs(cornerFuncs, &cornerFuncTurn, i) }
 
+	registerFunc := func(keystr string, Handler func()) {
+		err = keybind.KeyPressFun(func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
+			seelog.Debugf("keystr：%v callback", keystr)
+			Handler()
+		}).Connect(X, X.RootWin(), keystr, true) // true 表示自动抓取按键
+		if err != nil {
+			seelog.Warnf("keystr：%v 注册失败", keystr)
+		}
+	}
+
 	// 按键名称参考 ：sgithub.com/BurntSushi/xgbutil/keybind/keysymdef.go
-	// Linux 下的热键定义，Key 字符串格式如 "Control-Alt-Left"
-	// 辅助函数：将字符串热键描述解析为 (mod, keycode)
-	parseHotkeyString := func(s string) (mod int, key int) {
-		// 简化实现：仅支持部分常用组合和方向键/数字/F键
-		// 实际项目可根据 keymap.go 或 X11 键码表完善
-		mod = 0
-		key = 0
-		if s == "" {
+	// Linux 下的热键定义，Key 字符串格式如 "Control-Mod1-Left"
+	registerFunc("Control-Mod1-Left", func() { cycleEdgeFuncs(0) })
+	registerFunc("Control-Mod1-Right", func() { cycleEdgeFuncs(1) })
+	registerFunc("Control-Mod1-Up", func() { cycleEdgeFuncs(2) })
+	registerFunc("Control-Mod1-Down", func() { cycleEdgeFuncs(3) })
+	registerFunc("Control-Mod1-2", func() { cycleCornerFuncs(0) })
+	registerFunc("Control-Mod1-1", func() { cycleCornerFuncs(1) })
+	registerFunc("Control-Mod1-3", func() { cycleCornerFuncs(2) })
+	registerFunc("Control-Mod1-4", func() { cycleCornerFuncs(3) })
+	registerFunc("Control-Mod1-Shift-F", func() {
+		lastResized = 0
+		if err := maximize(); err != nil {
+			seelog.Errorf("warn: maximize: %v", err)
 			return
 		}
-		if contains(s, "Control") {
-			mod |= MOD_CONTROL
+	})
+	registerFunc("Control-Mod1-Shift-C", func() {
+		lastResized = 0
+		if _, err := resize(w32.GetForegroundWindow(), center); err != nil {
+			seelog.Errorf("warn: resize: %v", err)
+			return
 		}
-		if contains(s, "Alt") {
-			mod |= MOD_ALT
+	})
+	registerFunc("Control-Mod1-Shift-A", func() {
+		hwnd := w32.GetForegroundWindow()
+		if err := toggleAlwaysOnTop(hwnd); err != nil {
+			seelog.Errorf("warn: toggleAlwaysOnTop: %v", err)
+			return
 		}
-		if contains(s, "Shift") {
-			mod |= MOD_SHIFT
-		}
-		if contains(s, "Win") {
-			mod |= MOD_WIN
-		}
-		switch {
-		case contains(s, "Left"):
-			key = 0x25 // 左方向键
-		case contains(s, "Right"):
-			key = 0x27 // 右方向键
-		case contains(s, "Up"):
-			key = 0x26 // 上方向键
-		case contains(s, "Down"):
-			key = 0x28 // 下方向键
-		case contains(s, "1"):
-			key = 0x31
-		case contains(s, "2"):
-			key = 0x32
-		case contains(s, "3"):
-			key = 0x33
-		case contains(s, "4"):
-			key = 0x34
-		case contains(s, "F"):
-			key = 0x46 // F
-		case contains(s, "C"):
-			key = 0x43 // C
-		case contains(s, "A"):
-			key = 0x41 // A
-		default:
-			key = 0
-		}
-		return
-	}
-
-	// 统一用 int 类型的 Key 字段
-	hks := []HotKey{
-		func() HotKey {
-			m, k := parseHotkeyString("Control-Alt-Left")
-			return HotKey{Id: 1, Mod: m, Key: k, Handler: func() { cycleEdgeFuncs(0) }}
-		}(),
-		func() HotKey {
-			m, k := parseHotkeyString("Control-Alt-Right")
-			return HotKey{Id: 2, Mod: m, Key: k, Handler: func() { cycleEdgeFuncs(1) }}
-		}(),
-		func() HotKey {
-			m, k := parseHotkeyString("Control-Alt-Up")
-			return HotKey{Id: 3, Mod: m, Key: k, Handler: func() { cycleEdgeFuncs(2) }}
-		}(),
-		func() HotKey {
-			m, k := parseHotkeyString("Control-Alt-Down")
-			return HotKey{Id: 4, Mod: m, Key: k, Handler: func() { cycleEdgeFuncs(3) }}
-		}(),
-		func() HotKey {
-			m, k := parseHotkeyString("Control-Alt-2")
-			return HotKey{Id: 5, Mod: m, Key: k, Handler: func() { cycleCornerFuncs(0) }}
-		}(),
-		func() HotKey {
-			m, k := parseHotkeyString("Control-Alt-1")
-			return HotKey{Id: 6, Mod: m, Key: k, Handler: func() { cycleCornerFuncs(1) }}
-		}(),
-		func() HotKey {
-			m, k := parseHotkeyString("Control-Alt-3")
-			return HotKey{Id: 7, Mod: m, Key: k, Handler: func() { cycleCornerFuncs(2) }}
-		}(),
-		func() HotKey {
-			m, k := parseHotkeyString("Control-Alt-4")
-			return HotKey{Id: 8, Mod: m, Key: k, Handler: func() { cycleCornerFuncs(3) }}
-		}(),
-		func() HotKey {
-			m, k := parseHotkeyString("Control-Alt-Shift-F")
-			return HotKey{Id: 50, Mod: m, Key: k, Handler: func() {
-				lastResized = 0
-				if err := maximize(); err != nil {
-					seelog.Errorf("warn: maximize: %v", err)
-					return
-				}
-			}}
-		}(),
-		func() HotKey {
-			m, k := parseHotkeyString("Control-Alt-Shift-C")
-			return HotKey{Id: 60, Mod: m, Key: k, Handler: func() {
-				lastResized = 0
-				if _, err := resize(w32.GetForegroundWindow(), center); err != nil {
-					seelog.Errorf("warn: resize: %v", err)
-					return
-				}
-			}}
-		}(),
-		func() HotKey {
-			m, k := parseHotkeyString("Control-Alt-Shift-A")
-			return HotKey{Id: 70, Mod: m, Key: k, Handler: func() {
-				hwnd := w32.GetForegroundWindow()
-				if err := toggleAlwaysOnTop(hwnd); err != nil {
-					seelog.Errorf("warn: toggleAlwaysOnTop: %v", err)
-					return
-				}
-				seelog.Debugf("> toggled always on top: %v", hwnd)
-			}}
-		}(),
-	}
-
-	// Linux 下批量注册热键
-	var failedHotKeys []HotKey
-	for _, hk := range hks {
-		ok := RegisterHotKey(hk)
-		if !ok {
-			failedHotKeys = append(failedHotKeys, hk)
-		}
-	}
-	if len(failedHotKeys) > 0 {
-		seelog.Warnf("以下热键注册失败（可能已被其他进程占用）：")
-		for _, hk := range failedHotKeys {
-			seelog.Debugf("  - %s", hk.Key)
-		}
-	}
+		seelog.Debugf("> toggled always on top: %v", hwnd)
+	})
 
 	exitCh := make(chan os.Signal)
 	signal.Notify(exitCh, os.Interrupt)
@@ -232,9 +234,14 @@ func main() {
 	// as we run "go initTray()" and not pin the thread that initializes the
 	// tray.
 	initTray()
-	if err := msgLoop(); err != nil {
-		panic(err)
-	}
+
+	// if err := msgLoop(); err != nil {
+	// 	panic(err)
+	// }
+	// Finally, start the main event loop. This will route any appropriate
+	// KeyPressEvents to your callback function.
+	log.Println("Program initialized. Start pressing keys!")
+	xevent.Main(X)
 }
 
 func showMessageBox(text string) {

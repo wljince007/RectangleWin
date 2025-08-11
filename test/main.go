@@ -21,6 +21,11 @@ func main() {
 	// run-time. (Assuming you're using the xevent package's event loop.)
 	keybind.Initialize(X)
 
+	// 退出时解关联
+	defer func() {
+		keybind.Detach(X, X.RootWin())
+	}()
+
 	// Before attaching callbacks, wrap them in a callback function type.
 	// The keybind package exposes two such callback types: keybind.KeyPressFun
 	// and keybind.KeyReleaseFun.
