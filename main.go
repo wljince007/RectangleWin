@@ -3,7 +3,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -265,29 +264,39 @@ func resize(hwnd w32.HWND, f resizeFunc) (bool, error) {
 
 func maximize() error {
 	hwnd := w32.GetForegroundWindow()
-	if !isZonableWindow(hwnd) {
-		return errors.New("foreground window is not zonable")
+	// if !isZonableWindow(hwnd) {
+	// 	return errors.New("foreground window is not zonable")
+	// }
+	// if !w32.ShowWindow(hwnd, w32.SW_MAXIMIZE) {
+	// 	return fmt.Errorf("failed to ShowWindow:%d", w32.GetLastError())
+	// }
+	var monInfo w32.MONITORINFO
+	if !w32.GetMonitorInfo(0, &monInfo) {
+		seelog.Debugf("\n\n")
+		return fmt.Errorf("failed to GetMonitorInfo:%d", w32.GetLastError())
 	}
-	if !w32.ShowWindow(hwnd, w32.SW_MAXIMIZE) {
-		return fmt.Errorf("failed to ShowWindow:%d", w32.GetLastError())
+	if !w32.SetWindowPos(hwnd, 0, int(monInfo.RcWork.Left), int(monInfo.RcWork.Top), int(monInfo.RcWork.Width()), int(monInfo.RcWork.Height()), w32.SWP_NOZORDER|w32.SWP_NOACTIVATE) {
+		seelog.Debugf("\n\n")
+		return fmt.Errorf("failed to SetWindowPos:%d", w32.GetLastError())
 	}
+
 	return nil
 }
 
 func toggleAlwaysOnTop(hwnd w32.HWND) error {
-	if !isZonableWindow(hwnd) {
-		return errors.New("foreground window is not zonable")
-	}
+	// if !isZonableWindow(hwnd) {
+	// 	return errors.New("foreground window is not zonable")
+	// }
 
-	if w32.GetWindowLong(hwnd, w32.GWL_EXSTYLE)&w32.WS_EX_TOPMOST != 0 {
-		if !w32.SetWindowPos(hwnd, w32.HWND_NOTOPMOST, 0, 0, 0, 0, w32.SWP_NOMOVE|w32.SWP_NOSIZE) {
-			return fmt.Errorf("failed to SetWindowPos(HWND_NOTOPMOST): %v", w32.GetLastError())
-		}
-	} else {
-		if !w32.SetWindowPos(hwnd, w32.HWND_TOPMOST, 0, 0, 0, 0, w32.SWP_NOMOVE|w32.SWP_NOSIZE) {
-			return fmt.Errorf("failed to SetWindowPos(HWND_TOPMOST) :%v", w32.GetLastError())
-		}
-	}
+	// if w32.GetWindowLong(hwnd, w32.GWL_EXSTYLE)&w32.WS_EX_TOPMOST != 0 {
+	// 	if !w32.SetWindowPos(hwnd, w32.HWND_NOTOPMOST, 0, 0, 0, 0, w32.SWP_NOMOVE|w32.SWP_NOSIZE) {
+	// 		return fmt.Errorf("failed to SetWindowPos(HWND_NOTOPMOST): %v", w32.GetLastError())
+	// 	}
+	// } else {
+	// 	if !w32.SetWindowPos(hwnd, w32.HWND_TOPMOST, 0, 0, 0, 0, w32.SWP_NOMOVE|w32.SWP_NOSIZE) {
+	// 		return fmt.Errorf("failed to SetWindowPos(HWND_TOPMOST) :%v", w32.GetLastError())
+	// 	}
+	// }
 	return nil
 }
 
