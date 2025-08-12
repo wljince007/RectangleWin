@@ -241,11 +241,11 @@ func resize(hwnd w32.HWND, f resizeFunc) (bool, error) {
 	newPos.Bottom += bExtra
 
 	lastResized = hwnd
-	if sameRect(rect, &newPos) {
-		seelog.Debugf("no resize")
-		seelog.Debugf("\n\n")
-		return false, nil
-	}
+	// if sameRect(rect, &newPos) {
+	// 	seelog.Debugf("no resize")
+	// 	seelog.Debugf("\n\n")
+	// 	return false, nil
+	// }
 
 	seelog.Debugf("> resizing to: %#v (W:%d,H:%d)", newPos, newPos.Width(), newPos.Height())
 	if !w32.ShowWindow(hwnd, w32.SW_SHOWNORMAL) { // normalize window first if it's set to SW_SHOWMAXIMIZE (and therefore stays maximized)
