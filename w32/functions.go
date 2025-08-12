@@ -176,7 +176,97 @@ func GetDeviceCaps(hdc uintptr, index int) int {
 func ReleaseDC(hwnd HWND, hdc uintptr) bool {
 	return true
 }
+func Test() bool {
+	xu := GetXConn()
+	if xu == nil {
+		return false
+	}
 
+	desktopNames, err := ewmh.DesktopNamesGet(xu)
+	if err != nil {
+		seelog.Errorf("DesktopNamesGet err:%v", err)
+		return false
+	}
+	for i, desktopName := range desktopNames {
+		seelog.Debugf("i:%v, desktopName:%v", i, desktopName)
+	}
+	// i:0, desktopName:Workspace 1
+	// i:1, desktopName:Workspace 2
+	// i:2, desktopName:Workspace 3
+	// i:3, desktopName:Workspace 4
+
+	desktopGeometry, err := ewmh.DesktopGeometryGet(xu)
+	if err != nil {
+		seelog.Errorf("DesktopGeometryGet err:%v", err)
+		return false
+	}
+	seelog.Debugf("desktopGeometry:%v", desktopGeometry)
+	// ans: desktopGeometry:&{3840 2160}
+
+	desktopLayout, err := ewmh.DesktopLayoutGet(xu)
+	if err != nil {
+		seelog.Errorf("DesktopLayoutGet err:%v", err)
+		return false
+	}
+	seelog.Debugf("desktopLayout:%v", desktopLayout)
+	// ans: desktopLayout:&{0 0 1 0}
+
+	desktopViewport, err := ewmh.DesktopViewportGet(xu)
+	if err != nil {
+		seelog.Errorf("DesktopViewportGet err:%v", err)
+		return false
+	}
+	seelog.Debugf("desktopViewport:%v", desktopViewport)
+	// ans: desktopViewport:[{0 0}]
+
+	// 桌面数量
+	numberOfDesktops, err := ewmh.NumberOfDesktopsGet(xu)
+	if err != nil {
+		seelog.Errorf("NumberOfDesktopsGet err:%v", err)
+		return false
+	}
+	seelog.Debugf("numberOfDesktops:%v", numberOfDesktops)
+	// ans: numberOfDesktops:4
+
+	//调用失败
+	// desktopIdxArr, err := ewmh.VisibleDesktopsGet(xu)
+	// if err != nil {
+	// 	seelog.Errorf("VisibleDesktopsGet err:%v", err)
+	// 	return false
+	// }
+	// for i, desktopIdx := range desktopIdxArr {
+	// 	seelog.Debugf("i:%v, desktopIdx:%v", i, desktopIdx)
+	// }
+
+	//得到活动窗口是第一个桌面
+	win, err := ewmh.ActiveWindowGet(xu)
+	if err != nil {
+		seelog.Errorf("ActiveWindowGet err:%v", err)
+		return false
+	}
+	desktopIdx, err := ewmh.WmDesktopGet(xu, win)
+	if err != nil {
+		seelog.Errorf("WmDesktopGet err:%v", err)
+		return false
+	}
+	seelog.Debugf("desktopIdx:%v", desktopIdx)
+	// ans: desktopIdx:1
+
+	WorkareaArr, err := ewmh.WorkareaGet(xu)
+	if err != nil {
+		seelog.Errorf("WorkareaGet err:%v", err)
+		return false
+	}
+	for i, workarea := range WorkareaArr {
+		seelog.Debugf("i:%v, workarea:%v", i, workarea)
+	}
+	// 得到4个工作区 ans:
+	// 2025/08/12 09:34:10 i:0, workarea:{0 27 3840 2133}
+	// 2025/08/12 09:34:10 i:1, workarea:{0 27 3840 2133}
+	// 2025/08/12 09:34:10 i:2, workarea:{0 27 3840 2133}
+	// 2025/08/12 09:34:10 i:3, workarea:{0 27 3840 2133}
+	return true
+}
 func GetMonitorInfo(mon uintptr, info *MONITORINFO) bool {
 	if info != nil {
 		*info = MONITORINFO{}
@@ -186,11 +276,23 @@ func GetMonitorInfo(mon uintptr, info *MONITORINFO) bool {
 		return false
 	}
 
+	globalMenuHight := 0 //全局任务栏高度
+
+	// 得到4个工作区,工作中有任务栏高度
+	WorkareaArr, err := ewmh.WorkareaGet(xu)
+	if err != nil {
+		seelog.Errorf("WorkareaGet err:%v", err)
+		return false
+	}
+	if len(WorkareaArr) > 0 {
+		globalMenuHight = WorkareaArr[0].Y
+	}
+
 	// 获取屏幕尺寸
 	geom := xwindow.RootGeometry(xu)
-	log.Printf("RootGeometry geom:%v", geom)
-	info.RcWork = RECT{int32(geom.X()), int32(geom.Y()), int32(geom.X() + geom.Width()), int32(geom.Y() + geom.Height())}
-	// info.RcWork = RECT{int32(geom.X()), int32(geom.Y()), int32(geom.Width()), int32(geom.Height())}
+	geom.YSet(globalMenuHight)
+	seelog.Debugf("RootGeometry geom:%v", geom)
+	info.RcWork = RECT{int32(geom.X()), int32(geom.Y()), int32(geom.Width()), int32(geom.Height())}
 	return true
 }
 
